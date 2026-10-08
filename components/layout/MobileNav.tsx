@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -37,6 +37,13 @@ export function MobileNav() {
               {item.label}
             </Link>
           ))}
+          <Link
+            href="/onboarding"
+            className={buttonVariants({ className: "mt-2 justify-center" })}
+            onClick={() => setOpen(false)}
+          >
+            Build My Roadmap
+          </Link>
         </nav>
       )}
     </div>

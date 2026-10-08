@@ -15,9 +15,34 @@ const sizeClasses = {
   lg: "h-12 px-6 text-base",
 } as const;
 
+export type ButtonVariant = keyof typeof variantClasses;
+export type ButtonSize = keyof typeof sizeClasses;
+
+/**
+ * Shared class builder so non-<button> elements (e.g. a Link styled as a
+ * CTA) can match Button's visual variants exactly.
+ */
+export function buttonVariants({
+  variant = "primary",
+  size = "md",
+  className,
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  className?: string;
+} = {}) {
+  return cn(
+    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors",
+    "disabled:pointer-events-none disabled:opacity-50",
+    variantClasses[variant],
+    sizeClasses[size],
+    className,
+  );
+}
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: keyof typeof variantClasses;
-  size?: keyof typeof sizeClasses;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -25,13 +50,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors",
-          "disabled:pointer-events-none disabled:opacity-50",
-          variantClasses[variant],
-          sizeClasses[size],
-          className,
-        )}
+        className={buttonVariants({ variant, size, className })}
         {...props}
       />
     );
