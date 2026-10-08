@@ -1,23 +1,24 @@
-import type { CareerGoal, Roadmap, RoadmapNode, UserProfile } from "@/types/career";
+import type { OnboardingData } from "@/lib/validation/onboarding";
+import type { CareerRoadmap, RoadmapNode } from "@/types/roadmap";
 
 /**
  * Contracts for the AI service boundary.
- * Implementations land in Step 4 (AI roadmap generation engine).
+ * `generateRoadmap` is implemented as of Step 4. The other two remain
+ * placeholders until Steps 6–7.
  */
 
 export interface GenerateRoadmapInput {
-  goal: CareerGoal;
-  profile?: UserProfile;
+  onboarding: OnboardingData;
 }
 
 export interface GenerateNodeActionPlanInput {
-  roadmap: Roadmap;
+  roadmap: CareerRoadmap;
   node: RoadmapNode;
 }
 
 export interface ReplanRoadmapInput {
-  roadmap: Roadmap;
-  profile: UserProfile;
+  roadmap: CareerRoadmap;
+  onboarding: OnboardingData;
 }
 
 export interface NodeActionPlan {

@@ -1,4 +1,9 @@
-import type { Roadmap } from "@/types/career";
+import { randomUUID } from "node:crypto";
+import { AIGenerationError } from "@/lib/ai/errors";
+import { buildRoadmapSystemPrompt, buildRoadmapUserPrompt } from "@/lib/ai/prompt";
+import { callAnthropic } from "@/lib/ai/providers/anthropic";
+import { aiRoadmapResponseSchema } from "@/lib/validation/roadmap";
+import type { CareerRoadmap } from "@/types/roadmap";
 import type {
   GenerateNodeActionPlanInput,
   GenerateRoadmapInput,
@@ -7,21 +12,63 @@ import type {
 } from "./types";
 
 /**
- * AI service boundary.
- *
- * These functions are placeholders that define the shape of the future
- * AI integration (Step 4: AI roadmap generation engine). They do not call
- * any AI provider yet. Server-side only: never import this module from a
- * client component, and keep the provider API key out of client bundles.
- *
- * Real implementations must validate the AI response with the schemas in
- * lib/validation before returning it to callers.
+ * AI service boundary. Server-side only: never import this module from a
+ * "use client" file, and keep the provider API key out of client bundles.
  */
 
-export async function generateRoadmap(
-  _input: GenerateRoadmapInput,
-): Promise<Roadmap> {
-  throw new Error("generateRoadmap is not implemented yet (see Step 4).");
+export async function generateRoadmap({
+  onboarding,
+}: GenerateRoadmapInput): Promise<CareerRoadmap> {
+  const systemPrompt = buildRoadmapSystemPrompt();
+  const userPrompt = buildRoadmapUserPrompt(onboarding);
+
+  const rawText = await callAnthropic(systemPrompt, userPrompt);
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(extractJson(rawText));
+  } catch {
+    throw new AIGenerationError(
+      "invalid_response",
+      "The AI provider did not return valid JSON.",
+    );
+  }
+
+  const result = aiRoadmapResponseSchema.safeParse(parsedJson);
+  if (!result.success) {
+    console.error(
+      "[lib/ai] Roadmap failed validation",
+      result.error.issues,
+    );
+    throw new AIGenerationError(
+      "validation_failed",
+      "The AI-generated roadmap didn't match the expected structure.",
+    );
+  }
+
+  const data = result.data;
+
+  return {
+    ...data,
+    id: randomUUID(),
+    goal: {
+      title: onboarding.careerGoal.title,
+      targetContextCategory: onboarding.careerGoal.targetContext?.category,
+      targetContextDetails: onboarding.careerGoal.targetContext?.details,
+      experienceLevel: onboarding.experienceLevel,
+      existingSkills: onboarding.existingSkills,
+      weeklyHours: onboarding.weeklyHours,
+      targetTimeline: onboarding.targetTimeline,
+    },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/** Models occasionally wrap JSON in a ```json fence despite instructions not to. */
+function extractJson(text: string): string {
+  const trimmed = text.trim();
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  return fenceMatch ? fenceMatch[1] : trimmed;
 }
 
 export async function generateNodeActionPlan(
@@ -34,6 +81,6 @@ export async function generateNodeActionPlan(
 
 export async function replanRoadmap(
   _input: ReplanRoadmapInput,
-): Promise<Roadmap> {
+): Promise<CareerRoadmap> {
   throw new Error("replanRoadmap is not implemented yet (see Step 7).");
 }
