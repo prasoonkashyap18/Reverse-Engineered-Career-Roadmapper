@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useSessionStorageValue } from "@/hooks/useSessionStorageValue";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
 import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import { CareerGoalStep } from "@/components/onboarding/steps/CareerGoalStep";
@@ -107,27 +106,47 @@ export function OnboardingFlow() {
   const [error, setError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Hydrate from sessionStorage once it's readable (null during SSR/first
-  // paint). Comparing against the last-applied raw value keeps this a no-op
-  // once in sync, including after our own writes below.
-  const storedDraftRaw = useSessionStorageValue(DRAFT_STORAGE_KEY);
-  const [appliedDraftRaw, setAppliedDraftRaw] = useState<string | null>(null);
-  if (storedDraftRaw !== null && storedDraftRaw !== appliedDraftRaw) {
-    setAppliedDraftRaw(storedDraftRaw);
-    try {
-      setDraft({ ...EMPTY_ONBOARDING_DRAFT, ...JSON.parse(storedDraftRaw) });
-    } catch {
-      // Malformed stored draft — ignore and keep current state.
-    }
-  }
+  // Hydrate from sessionStorage exactly once, on mount, then let the write
+  // effect below take over. `hydrated` is deliberately *state*, not a ref:
+  // a ref mutated inside this effect becomes visible to the write effect
+  // within the very same passive-effect flush — before the hydrated draft
+  // has actually rendered — so the write effect would still see the old
+  // (empty) `draft` closure, immediately overwrite sessionStorage with it,
+  // and permanently clobber the real stored draft. A ref is also what
+  // caused the original bug here: a prior version used one to gate a
+  // content-diffed reapplication of the raw stored string on every render,
+  // which raced the same way against the write effect (the value a render
+  // reads back is always one commit behind the latest keystroke) and
+  // reverted every character the user typed, forcing each key to be
+  // pressed twice before it stuck. State fixes both: React only exposes a
+  // new state value to effects once a render has actually committed with
+  // it, so the write effect can never observe "hydrated" without also
+  // observing the hydrated `draft`.
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-time sync from sessionStorage on mount, not a reactive subscription
+        setDraft({ ...EMPTY_ONBOARDING_DRAFT, ...parsed });
+      }
+    } catch {
+      // Malformed or inaccessible storage — start fresh.
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     try {
       sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     } catch {
       // Best-effort persistence only.
     }
-  }, [draft]);
+  }, [draft, hydrated]);
 
   function updateDraft(patch: Partial<OnboardingDraft>) {
     setDraft((prev) => ({ ...prev, ...patch }));
