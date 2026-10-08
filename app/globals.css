@@ -101,3 +101,36 @@ html {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * React Flow (roadmap graph, Step 5) theming — restyled to match
+ * CareerForge's tokens instead of the library's default look.
+ */
+.react-flow {
+  background: transparent;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__controls {
+  box-shadow: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.react-flow__controls-button:hover {
+  background: var(--surface-elevated);
+}
+
+.react-flow__controls-button svg {
+  fill: var(--foreground);
+}

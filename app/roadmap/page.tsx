@@ -7,6 +7,7 @@ import { MarketingLayout } from "@/components/layout/MarketingLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonVariants } from "@/components/ui/Button";
+import { RoadmapGraph } from "@/components/roadmap/RoadmapGraph";
 import type { OnboardingData } from "@/lib/validation/onboarding";
 import type { CareerRoadmap } from "@/types/roadmap";
 
@@ -68,12 +69,13 @@ export default function RoadmapPage() {
         <Card className="text-left">
           <CardHeader>
             <Badge variant="primary" className="mb-2 w-fit">
-              Step 4 — AI roadmap engine
+              AI-generated roadmap
             </Badge>
             <CardTitle>Your career roadmap</CardTitle>
             <CardDescription>
-              This is a structured data preview proving the generation
-              pipeline — the real interactive graph ships in Step 5.
+              Explore it as a graph — zoom, pan, and click a node to see
+              what it connects to. Detailed per-node guidance is coming in
+              a later step.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -159,6 +161,19 @@ export default function RoadmapPage() {
 }
 
 function RoadmapPreview({ roadmap }: { roadmap: CareerRoadmap }) {
+  if (roadmap.nodes.length === 0) {
+    return (
+      <Card className="text-left">
+        <CardContent className="pt-6">
+          <p className="text-sm text-muted-foreground">
+            The AI returned a roadmap with no nodes to visualize. Try
+            regenerating.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="text-left">
       <CardHeader>
@@ -168,43 +183,8 @@ function RoadmapPreview({ roadmap }: { roadmap: CareerRoadmap }) {
           {roadmap.nodes.length} nodes
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
-        {roadmap.phases
-          .slice()
-          .sort((a, b) => a.order - b.order)
-          .map((phase) => (
-            <div key={phase.id} className="border-l-2 border-primary/40 pl-4">
-              <p className="text-sm font-semibold text-foreground">
-                {phase.title}{" "}
-                <span className="font-normal text-muted-foreground">
-                  — ~{phase.estimatedWeeks}w
-                </span>
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">{phase.summary}</p>
-
-              {phase.skills.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {phase.skills.map((skill) => (
-                    <Badge key={skill.id}>{skill.name}</Badge>
-                  ))}
-                </div>
-              )}
-
-              {phase.milestones.length > 0 && (
-                <ul className="mt-3 list-inside list-disc text-sm text-muted-foreground">
-                  {phase.milestones.map((m) => (
-                    <li key={m.id}>{m.title}</li>
-                  ))}
-                </ul>
-              )}
-
-              {phase.entryRoles.length > 0 && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Entry role: {phase.entryRoles.map((r) => r.title).join(", ")}
-                </p>
-              )}
-            </div>
-          ))}
+      <CardContent>
+        <RoadmapGraph roadmap={roadmap} />
       </CardContent>
     </Card>
   );
