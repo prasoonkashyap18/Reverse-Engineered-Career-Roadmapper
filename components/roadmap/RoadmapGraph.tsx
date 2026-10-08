@@ -13,21 +13,27 @@ import "@xyflow/react/dist/style.css";
 import { useReducedMotion } from "framer-motion";
 import { buildRoadmapFlow } from "@/components/roadmap/layout";
 import { RoadmapNodeCard } from "@/components/roadmap/nodes/RoadmapNodeCard";
+import { NodeDetailPanel } from "@/components/roadmap/NodeDetailPanel";
+import type { OnboardingData } from "@/lib/validation/onboarding";
 import type { CareerRoadmap } from "@/types/roadmap";
 
 const nodeTypes = { roadmapNode: RoadmapNodeCard };
 
 export interface RoadmapGraphProps {
   roadmap: CareerRoadmap;
+  onboarding: OnboardingData;
 }
 
 /**
- * The interactive career roadmap graph (Step 5). Built from the real
- * CareerRoadmap.nodes/edges — no hard-coded structure. Node click toggles
- * selection and highlights its directly connected nodes/edges; clicking
- * the background clears it. Detailed per-node AI actions are Step 6.
+ * The interactive career roadmap graph (Step 5) plus per-node detail
+ * (Step 6). Built from the real CareerRoadmap.nodes/edges — no hard-coded
+ * structure. Clicking a node selects it (highlighting its directly
+ * connected nodes/edges, same as Step 5) and opens a detail panel with an
+ * explicit "Get AI action plan" action; clicking the background or
+ * closing the panel clears the selection and restores normal graph
+ * interaction.
  */
-export function RoadmapGraph({ roadmap }: RoadmapGraphProps) {
+export function RoadmapGraph({ roadmap, onboarding }: RoadmapGraphProps) {
   const reduceMotion = useReducedMotion();
   const { nodes: baseNodes, edges: baseEdges } = useMemo(
     () => buildRoadmapFlow(roadmap),
@@ -80,12 +86,17 @@ export function RoadmapGraph({ roadmap }: RoadmapGraphProps) {
   }, []);
 
   const handlePaneClick = useCallback(() => setSelectedId(null), []);
+  const handlePanelClose = useCallback(() => setSelectedId(null), []);
+
+  const selectedNode = selectedId
+    ? (roadmap.nodes.find((n) => n.id === selectedId) ?? null)
+    : null;
 
   return (
     <div
       role="group"
-      aria-label={`Career roadmap graph with ${baseNodes.length} nodes. Select a node to highlight its connections.`}
-      className="h-[70vh] min-h-[420px] w-full overflow-hidden rounded-lg border border-border bg-surface-elevated"
+      aria-label={`Career roadmap graph with ${baseNodes.length} nodes. Select a node to highlight its connections and see details.`}
+      className="relative h-[70vh] min-h-[420px] w-full overflow-hidden rounded-lg border border-border bg-surface-elevated"
     >
       <ReactFlowProvider>
         <ReactFlow
@@ -120,6 +131,13 @@ export function RoadmapGraph({ roadmap }: RoadmapGraphProps) {
           />
         </ReactFlow>
       </ReactFlowProvider>
+
+      <NodeDetailPanel
+        roadmap={roadmap}
+        onboarding={onboarding}
+        node={selectedNode}
+        onClose={handlePanelClose}
+      />
     </div>
   );
 }

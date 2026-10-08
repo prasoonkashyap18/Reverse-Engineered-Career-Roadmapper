@@ -73,7 +73,7 @@ const roadmapNodeTypeSchema = z.enum([
 
 const roadmapNodePrioritySchema = z.enum(["core", "recommended", "optional"]);
 
-const roadmapNodeSchema = z.object({
+export const roadmapNodeSchema = z.object({
   id: z.string().min(1),
   type: roadmapNodeTypeSchema,
   label: z.string().min(1).max(100),

@@ -1,10 +1,11 @@
 import type { OnboardingData } from "@/lib/validation/onboarding";
+import type { NodeActionPlan } from "@/lib/validation/node-action";
 import type { CareerRoadmap, RoadmapNode } from "@/types/roadmap";
 
 /**
  * Contracts for the AI service boundary.
- * `generateRoadmap` is implemented as of Step 4. The other two remain
- * placeholders until Steps 6–7.
+ * `generateRoadmap` and `generateNodeActionPlan` are implemented (Steps 4
+ * and 6). `replanRoadmap` remains a placeholder until Step 7.
  */
 
 export interface GenerateRoadmapInput {
@@ -12,8 +13,8 @@ export interface GenerateRoadmapInput {
 }
 
 export interface GenerateNodeActionPlanInput {
-  roadmap: CareerRoadmap;
-  node: RoadmapNode;
+  node: RoadmapNode & { phaseTitle: string };
+  onboarding: OnboardingData;
 }
 
 export interface ReplanRoadmapInput {
@@ -21,7 +22,4 @@ export interface ReplanRoadmapInput {
   onboarding: OnboardingData;
 }
 
-export interface NodeActionPlan {
-  nodeId: string;
-  steps: string[];
-}
+export type { NodeActionPlan };

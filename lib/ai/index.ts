@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { AIGenerationError } from "@/lib/ai/errors";
-import { buildRoadmapSystemPrompt, buildRoadmapUserPrompt } from "@/lib/ai/prompt";
+import {
+  buildNodeActionSystemPrompt,
+  buildNodeActionUserPrompt,
+  buildRoadmapSystemPrompt,
+  buildRoadmapUserPrompt,
+} from "@/lib/ai/prompt";
 import { callAnthropic } from "@/lib/ai/providers/anthropic";
+import { nodeActionPlanSchema } from "@/lib/validation/node-action";
 import { aiRoadmapResponseSchema } from "@/lib/validation/roadmap";
 import type { CareerRoadmap } from "@/types/roadmap";
 import type {
@@ -72,11 +78,33 @@ function extractJson(text: string): string {
 }
 
 export async function generateNodeActionPlan(
-  _input: GenerateNodeActionPlanInput,
+  input: GenerateNodeActionPlanInput,
 ): Promise<NodeActionPlan> {
-  throw new Error(
-    "generateNodeActionPlan is not implemented yet (see Step 6).",
-  );
+  const systemPrompt = buildNodeActionSystemPrompt();
+  const userPrompt = buildNodeActionUserPrompt(input);
+
+  const rawText = await callAnthropic(systemPrompt, userPrompt);
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(extractJson(rawText));
+  } catch {
+    throw new AIGenerationError(
+      "invalid_response",
+      "The AI provider did not return valid JSON.",
+    );
+  }
+
+  const result = nodeActionPlanSchema.safeParse(parsedJson);
+  if (!result.success) {
+    console.error("[lib/ai] Node action plan failed validation", result.error.issues);
+    throw new AIGenerationError(
+      "validation_failed",
+      "The AI-generated action plan didn't match the expected structure.",
+    );
+  }
+
+  return result.data;
 }
 
 export async function replanRoadmap(

@@ -154,13 +154,21 @@ export default function RoadmapPage() {
           </CardContent>
         </Card>
 
-        {state.status === "success" && <RoadmapPreview roadmap={state.roadmap} />}
+        {state.status === "success" && onboardingData && (
+          <RoadmapPreview roadmap={state.roadmap} onboarding={onboardingData} />
+        )}
       </div>
     </MarketingLayout>
   );
 }
 
-function RoadmapPreview({ roadmap }: { roadmap: CareerRoadmap }) {
+function RoadmapPreview({
+  roadmap,
+  onboarding,
+}: {
+  roadmap: CareerRoadmap;
+  onboarding: OnboardingData;
+}) {
   if (roadmap.nodes.length === 0) {
     return (
       <Card className="text-left">
@@ -184,7 +192,7 @@ function RoadmapPreview({ roadmap }: { roadmap: CareerRoadmap }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <RoadmapGraph roadmap={roadmap} />
+        <RoadmapGraph roadmap={roadmap} onboarding={onboarding} />
       </CardContent>
     </Card>
   );
